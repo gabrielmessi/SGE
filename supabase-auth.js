@@ -1,17 +1,17 @@
-
 (function () {
   "use strict";
 
+  var COMPANY_ID = "8c1e2a7d-6b4f-4a9c-8d3e-1f7a5b2c9d60";
   var KEY = "adega-estoque-v1";
-  var OWNER_KEY = "adega-estoque-owner-v1";
+  var CACHE_KEY = "sge-shared-company-v1";
 
   var client = null;
   var activeUser = null;
   var loadedUserId = null;
-  var loadingUserId = null;
+  var activationPromise = null;
+  var savingPromise = Promise.resolve();
   var readyResolved = false;
   var resolveReady;
-  var activationPromise = null;
 
   window.SGECloud = {
     ready: new Promise(function (resolve) {
@@ -27,26 +27,43 @@
     }
   }
 
-  function getLocalData() {
-    try {
-      var saved = localStorage.getItem(KEY);
-      return saved ? JSON.parse(saved) : null;
-    } catch (error) {
-      console.error("Erro ao ler os dados locais:", error);
-      return null;
-    }
-  }
-
-  function setLocalData(data) {
-    localStorage.setItem(KEY, JSON.stringify(data));
-  }
-
   function emptyData() {
     return {
       products: [],
       log: [],
       cashDays: {}
     };
+  }
+
+  function normalizeData(data) {
+    if (!data || typeof data !== "object" || Array.isArray(data)) {
+      return emptyData();
+    }
+
+    return {
+      products: Array.isArray(data.products) ? data.products : [],
+      log: Array.isArray(data.log) ? data.log : [],
+      cashDays:
+        data.cashDays &&
+        typeof data.cashDays === "object" &&
+        !Array.isArray(data.cashDays)
+          ? data.cashDays
+          : {}
+    };
+  }
+
+  function getLocalData() {
+    try {
+      var saved = localStorage.getItem(KEY);
+      return saved ? normalizeData(JSON.parse(saved)) : emptyData();
+    } catch (error) {
+      console.error("Erro ao ler os dados locais:", error);
+      return emptyData();
+    }
+  }
+
+  function setLocalData(data) {
+    localStorage.setItem(KEY, JSON.stringify(normalizeData(data)));
   }
 
   function showMessage(message, isError) {
@@ -86,13 +103,8 @@
         box-shadow: 0 12px 40px #0004;
       }
 
-      #sge-auth-card h2 {
-        margin-top: 0;
-      }
-
-      #sge-auth-card p {
-        line-height: 1.5;
-      }
+      #sge-auth-card h2 { margin-top: 0; }
+      #sge-auth-card p { line-height: 1.5; }
 
       #sge-auth-card input {
         display: block;
@@ -117,7 +129,7 @@
 
       #sge-auth-card button:disabled {
         cursor: wait;
-        opacity: 0.65;
+        opacity: .65;
       }
 
       #sge-auth-submit {
@@ -168,13 +180,10 @@
       <div id="sge-auth-card">
         <h2 id="sge-auth-title">Entrar no SGE</h2>
 
-        <p>
-          Entre com sua conta para acessar os dados do estoque.
-        </p>
+        <p>Entre com sua conta autorizada para acessar o estoque compartilhado.</p>
 
         <form id="sge-auth-form">
           <label for="sge-auth-email">E-mail</label>
-
           <input
             id="sge-auth-email"
             type="email"
@@ -183,7 +192,6 @@
           >
 
           <label for="sge-auth-password">Senha</label>
-
           <input
             id="sge-auth-password"
             type="password"
@@ -192,13 +200,8 @@
             required
           >
 
-          <button id="sge-auth-submit" type="submit">
-            Entrar
-          </button>
-
-          <button id="sge-auth-toggle" type="button">
-            Criar uma conta
-          </button>
+          <button id="sge-auth-submit" type="submit">Entrar</button>
+          <button id="sge-auth-toggle" type="button">Criar uma conta</button>
         </form>
 
         <p id="sge-auth-message" role="status"></p>
@@ -234,20 +237,15 @@
       event.preventDefault();
 
       if (!client) {
-        showMessage("O sistema de autenticação não está disponível.", true);
+        showMessage("A autenticação não está disponível.", true);
         return;
       }
 
       submit.disabled = true;
       toggle.disabled = true;
 
-      var email = document
-        .getElementById("sge-auth-email")
-        .value.trim();
-
-      var password = document
-        .getElementById("sge-auth-password")
-        .value;
+      var email = document.getElementById("sge-auth-email").value.trim();
+      var password = document.getElementById("sge-auth-password").value;
 
       try {
         var result = registering
@@ -264,21 +262,18 @@
 
         if (registering && !result.data.session) {
           showMessage(
-            "Conta criada. Confira seu e-mail para confirmar o cadastro. " +
-            "Depois, volte aqui e entre com sua conta.",
+            "Conta criada. Confirme seu e-mail e depois entre. " +
+            "A conta ainda precisará ser autorizada para acessar o estoque.",
             false
           );
         } else if (result.data.session) {
           await activateUser(result.data.session);
         } else {
-          showMessage(
-            "Não foi possível iniciar a sessão. Verifique o cadastro.",
-            true
-          );
+          showMessage("Não foi possível iniciar a sessão.", true);
         }
       } catch (error) {
         showMessage(
-          error.message || "Ocorreu um erro na autenticação.",
+          error.message || "Erro durante a autenticação.",
           true
         );
       } finally {
@@ -293,90 +288,87 @@
 
     var user = session.user;
 
-    if (loadedUserId === user.id) {
+    if (loadedUserId === user.id && activeUser) {
       finishReady();
       return;
     }
 
-    if (loadingUserId === user.id && activationPromise) {
+    if (activationPromise) {
       await activationPromise;
-      return;
-    }
 
-    loadingUserId = user.id;
+      if (loadedUserId === user.id && activeUser) return;
+    }
 
     activationPromise = loadUserData(user);
 
     try {
       await activationPromise;
     } finally {
-      loadingUserId = null;
       activationPromise = null;
     }
   }
 
   async function loadUserData(user) {
-    try {
-      activeUser = user;
+    var screen = document.getElementById("sge-auth-screen");
 
-      var result = await client
-        .from("sge_data")
-        .select("data")
+    try {
+      showMessage("Verificando autorização...", false);
+
+      // Confere se esta conta foi autorizada pelo administrador.
+      var membership = await client
+        .from("sge_company_members")
+        .select("user_id, role")
         .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (membership.error) throw membership.error;
+
+      if (!membership.data) {
+        activeUser = null;
+        loadedUserId = null;
+
+        showMessage(
+          "Esta conta ainda não tem autorização para acessar o estoque. " +
+          "Peça ao administrador do SGE para liberar seu acesso.",
+          true
+        );
+
+        return;
+      }
+
+      // Todas as contas autorizadas leem a mesma linha da empresa.
+      var result = await client
+        .from("sge_shared_data")
+        .select("data")
+        .eq("company_id", COMPANY_ID)
         .maybeSingle();
 
       if (result.error) throw result.error;
 
+      var sharedData;
+
       if (result.data) {
-        // Os dados da nuvem são a fonte principal desta conta.
-        setLocalData(result.data.data);
+        sharedData = normalizeData(result.data.data);
       } else {
-        var localData = getLocalData();
-        var localOwnerId = localStorage.getItem(OWNER_KEY);
-
-        // Não reutilizar dados identificados como pertencentes
-        // a outra conta neste navegador.
-        if (localOwnerId && localOwnerId !== user.id) {
-          localData = null;
-        }
-
-        if (localData) {
-          var importLocal = window.confirm(
-            "Esta conta ainda não tem dados na nuvem.\n\n" +
-            "Deseja importar os dados salvos neste navegador?\n\n" +
-            "OK = importar os dados locais.\n" +
-            "Cancelar = começar com um estoque vazio."
-          );
-
-          if (!importLocal) {
-            localData = emptyData();
-          }
-        } else {
-          localData = emptyData();
-        }
-
-        setLocalData(localData);
+        sharedData = emptyData();
 
         var inserted = await client
-          .from("sge_data")
+          .from("sge_shared_data")
           .insert({
-            user_id: user.id,
-            data: localData
+            company_id: COMPANY_ID,
+            data: sharedData
           });
 
         if (inserted.error) throw inserted.error;
       }
 
-      // Registra a conta proprietária dos dados locais.
-      localStorage.setItem(OWNER_KEY, user.id);
+      setLocalData(sharedData);
+      localStorage.setItem(CACHE_KEY, COMPANY_ID);
 
+      activeUser = user;
       loadedUserId = user.id;
 
-      var screen = document.getElementById("sge-auth-screen");
-
-      if (screen) {
-        screen.style.display = "none";
-      }
+      if (screen) screen.style.display = "none";
 
       showUserBar(user.email);
       finishReady();
@@ -384,10 +376,12 @@
       activeUser = null;
       loadedUserId = null;
 
+      if (screen) screen.style.display = "flex";
+
       showMessage(
-        "Erro ao carregar os dados: " +
+        "Não foi possível carregar o SGE: " +
         (error.message || "erro desconhecido") +
-        ". Verifique a configuração, a conexão e as permissões do Supabase.",
+        ". Confira as tabelas, as permissões e a conexão do Supabase.",
         true
       );
 
@@ -397,7 +391,6 @@
 
   function showUserBar(email) {
     var oldBar = document.getElementById("sge-user-bar");
-
     if (oldBar) oldBar.remove();
 
     var bar = document.createElement("div");
@@ -414,7 +407,6 @@
 
       try {
         var result = await client.auth.signOut();
-
         if (result.error) throw result.error;
 
         activeUser = null;
@@ -441,37 +433,29 @@
       return;
     }
 
-    var data = getLocalData();
+    // Evita duas gravações simultâneas iniciadas nesta mesma aba.
+    savingPromise = savingPromise.catch(function () {}).then(async function () {
+      if (!activeUser || loadedUserId !== activeUser.id) return;
 
-    if (!data) return;
+      var data = getLocalData();
 
-    // Impede sincronizar dados locais marcados para outra conta.
-    var ownerId = localStorage.getItem(OWNER_KEY);
+      var result = await client
+        .from("sge_shared_data")
+        .upsert({
+          company_id: COMPANY_ID,
+          data: data,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: "company_id"
+        });
 
-    if (ownerId && ownerId !== activeUser.id) {
-      throw new Error(
-        "Os dados locais não pertencem à conta atualmente conectada."
-      );
-    }
+      if (result.error) {
+        console.error("Erro ao sincronizar SGE:", result.error.message);
+        throw result.error;
+      }
+    });
 
-    var result = await client
-      .from("sge_data")
-      .upsert({
-        user_id: activeUser.id,
-        data: data,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: "user_id"
-      });
-
-    if (result.error) {
-      console.error(
-        "Erro ao sincronizar SGE:",
-        result.error.message
-      );
-
-      throw result.error;
-    }
+    return savingPromise;
   }
 
   async function start() {
@@ -482,17 +466,13 @@
       typeof window.supabase.createClient !== "function"
     ) {
       showMessage(
-        "A biblioteca do Supabase não foi carregada. " +
-        "Confira o index.html e sua conexão.",
+        "A biblioteca do Supabase não foi carregada. Confira o index.html.",
         true
       );
       return;
     }
 
-    if (
-      !window.SGE_SUPABASE_URL ||
-      !window.SGE_SUPABASE_ANON_KEY
-    ) {
+    if (!window.SGE_SUPABASE_URL || !window.SGE_SUPABASE_ANON_KEY) {
       showMessage(
         "Faltam as configurações do Supabase em supabase-config.js.",
         true
@@ -507,16 +487,12 @@
       );
 
       client.auth.onAuthStateChange(function (event, session) {
-        // Não executar operações de banco diretamente no callback.
         Promise.resolve().then(async function () {
           if (session) {
             try {
               await activateUser(session);
             } catch (error) {
-              console.error(
-                "Erro ao ativar a conta:",
-                error.message
-              );
+              console.error("Erro ao ativar conta:", error.message);
             }
           } else if (event === "SIGNED_OUT") {
             activeUser = null;
@@ -526,7 +502,6 @@
       });
 
       var result = await client.auth.getSession();
-
       if (result.error) throw result.error;
 
       if (result.data.session) {
