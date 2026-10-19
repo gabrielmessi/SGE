@@ -4,26 +4,51 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Adega · Estoque e caixa</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;700&family=Young+Serif&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div class="wrap">
+
   <header>
     <div>
       <img class="brand" src="IMG-20261018-WA0015.jpg" alt="Império das Bebidas">
       <h1>Estoque</h1>
       <p class="sub">Cadastre as bebidas, registre entradas e saídas e veja o que precisa repor.</p>
     </div>
-    <button id="addBtn" class="primary">Novo produto</button>
+    <button id="addBtn" class="primary" type="button">Novo produto</button>
   </header>
 
+  <!-- Indicadores do estoque: IDs utilizados pelo script.js -->
   <section class="stats" aria-label="Resumo do estoque">
-    <div class="stat"><b id="stUnits">0</b><span>garrafas e unidades em estoque</span></div>
-    <div class="stat"><b id="stValue">R$ 0,00</b><span>valor do estoque, a preço de custo</span></div>
-    <div class="stat" id="stLowBox"><b id="stLow">0</b><span>produtos para repor</span></div>
+    <div class="stat">
+      <b id="kProducts">0</b>
+      <span>Produtos cadastrados</span>
+    </div>
+
+    <div class="stat">
+      <b id="kItems">0</b>
+      <span>Garrafas e unidades em estoque</span>
+    </div>
+
+    <div class="stat">
+      <b id="kStockValue">R$ 0,00</b>
+      <span>Valor do estoque a preço de custo</span>
+    </div>
+
+    <div class="stat">
+      <b id="kLow">0</b>
+      <span>Produtos para repor</span>
+    </div>
+
+    <div class="stat">
+      <b id="kOut">0</b>
+      <span>Produtos esgotados</span>
+    </div>
   </section>
 
   <h1>Financeiro diário</h1>
@@ -33,23 +58,50 @@
       Dia do relatório
       <input type="date" id="fDate" aria-label="Dia do relatório">
     </label>
+
     <button type="button" id="todayBtn">Hoje</button>
     <button type="button" id="expenseBtn" class="primary">Registrar despesa</button>
   </div>
 
   <section class="stats finance-stats" aria-label="Resumo financeiro do dia">
-    <div class="stat"><b id="fiRev">R$ 0,00</b><span>vendas registradas</span></div>
-    <div class="stat"><b id="fiBuy">R$ 0,00</b><span>compras de estoque registradas</span></div>
-    <div class="stat"><b id="fiProfit">R$ 0,00</b><span>lucro bruto estimado (venda − custo dos produtos vendidos)</span></div>
-    <div class="stat"><b id="fiLoss">R$ 0,00</b><span>perdas a preço de custo</span></div>
-    <div class="stat"><b id="fiExpenses">R$ 0,00</b><span>despesas registradas</span></div>
+    <div class="stat">
+      <b id="fiRev">R$ 0,00</b>
+      <span>Vendas registradas</span>
+    </div>
+
+    <div class="stat">
+      <b id="fiBuy">R$ 0,00</b>
+      <span>Compras de estoque registradas</span>
+    </div>
+
+    <div class="stat">
+      <b id="fiProfit">R$ 0,00</b>
+      <span>Lucro bruto estimado</span>
+    </div>
+
+    <div class="stat">
+      <b id="fiLoss">R$ 0,00</b>
+      <span>Perdas a preço de custo</span>
+    </div>
+
+    <div class="stat">
+      <b id="fiExpenses">R$ 0,00</b>
+      <span>Despesas registradas</span>
+    </div>
   </section>
 
+  <!-- Conferência do caixa -->
   <section class="cash-panel" aria-label="Conferência do caixa">
     <h2>Conferência do caixa · <span id="cashDayLabel"></span></h2>
-    <p class="sub">O fundo inicial não é uma venda. O sistema estima o dinheiro esperado na gaveta usando apenas movimentações marcadas como pagas em dinheiro.</p>
+
+    <p class="sub">
+      O fundo inicial não é uma venda. O sistema estima o dinheiro
+      esperado na gaveta usando apenas movimentações marcadas como
+      pagas em dinheiro.
+    </p>
 
     <div class="cash-grid">
+
       <div class="cash-field">
         <label for="cashOpen">Fundo inicial (R$)</label>
         <input id="cashOpen" type="number" min="0" step="0.01" placeholder="Ex.: 200,00">
@@ -81,71 +133,124 @@
         <input id="cashClose" type="number" min="0" step="0.01" placeholder="Informe o valor contado">
         <button type="button" id="saveClosing">Conferir fechamento</button>
       </div>
+
     </div>
 
-    <p class="cash-result"><strong>Diferença:</strong> <span id="cashDifference">Ainda não fechado</span></p>
-    <p id="cashCloseStatus" class="sub" aria-live="polite">Informe o dinheiro contado na gaveta para comparar.</p>
+    <p class="cash-result">
+      <strong>Diferença:</strong>
+      <span id="cashDifference">Ainda não fechado</span>
+    </p>
+
+    <p id="cashCloseStatus" class="sub" aria-live="polite">
+      Informe o dinheiro contado na gaveta para comparar.
+    </p>
   </section>
 
+  <!-- Filtros de produtos -->
   <div class="bar">
-    <input type="search" id="q" placeholder="Buscar por nome" aria-label="Buscar por nome">
-    <select id="catFilter" aria-label="Filtrar por categoria"></select>
+    <input
+      type="search"
+      id="q"
+      placeholder="Buscar por nome ou categoria"
+      aria-label="Buscar produtos"
+    >
+
+    <select id="catFilter" aria-label="Filtrar por categoria">
+      <option value="">Todas as categorias</option>
+    </select>
+
     <select id="statusFilter" aria-label="Filtrar por situação">
       <option value="">Todas as situações</option>
       <option value="low">Para repor</option>
+      <option value="out">Esgotado</option>
       <option value="ok">Estoque normal</option>
     </select>
   </div>
 
+  <!-- Tabela de produtos: oito colunas, como o script.js gera -->
   <div class="tablebox">
     <table>
       <thead>
         <tr>
           <th>Produto</th>
+          <th>Categoria</th>
           <th>Estoque</th>
           <th class="n">Mínimo</th>
+          <th class="n">Preço de custo</th>
           <th class="n">Preço de venda</th>
-          <th class="n">Margem</th>
-          <th></th>
+          <th>Situação</th>
+          <th>Ações</th>
         </tr>
       </thead>
+
       <tbody id="rows"></tbody>
     </table>
-    <div id="empty" class="empty" hidden>Nenhum produto encontrado. Use “Novo produto” para cadastrar.</div>
   </div>
 
+  <!-- Movimentações da data selecionada -->
   <h2>Movimentações do dia</h2>
-  <ul class="log" id="log"></ul>
+
+  <div class="tablebox">
+    <table>
+      <thead>
+        <tr>
+          <th>Horário</th>
+          <th>Tipo</th>
+          <th>Produto / descrição</th>
+          <th>Quantidade</th>
+          <th>Total</th>
+          <th>Pagamento</th>
+          <th>Observação</th>
+        </tr>
+      </thead>
+
+      <tbody id="movementRows"></tbody>
+    </table>
+  </div>
+
+  <!-- Movimentações recentes -->
+  <h2>Movimentações recentes</h2>
+  <ul class="log" id="recentList"></ul>
+
 </div>
 
+<!-- Cadastro e edição de produtos -->
 <dialog id="pDlg">
   <form id="pForm" method="dialog">
     <h3 id="pTitle">Novo produto</h3>
 
-    <label>Nome
+    <label>
+      Nome
       <input id="fName" required maxlength="80" placeholder="Ex.: Malbec Reserva 750 ml">
     </label>
 
-    <label>Categoria
+    <label>
+      Categoria
       <input id="fCat" required maxlength="40" list="cats" placeholder="Ex.: Vinho tinto">
     </label>
 
     <datalist id="cats"></datalist>
 
     <div class="row2">
-      <label>Quantidade inicial
+      <label>
+        Quantidade inicial
         <input id="fQty" type="number" min="0" step="1" value="0">
       </label>
-      <label>Estoque mínimo
+
+      <label>
+        Estoque mínimo
         <input id="fMin" type="number" min="0" step="1" value="6">
       </label>
     </div>
 
     <div class="row2">
-      <label>Preço de custo (R$)
+      <label>
+        Preço de custo (R$)
         <input id="fCost" type="number" min="0" step="0.01" value="0">
       </label>
-      <label>Preço de venda (R$)
+
+      <label>
+        Preço de venda (R$)
         <input id="fPrice" type="number" min="0" step="0.01" value="0">
       </label>
     </div>
@@ -160,11 +265,13 @@
   </form>
 </dialog>
 
+<!-- Entrada, venda e perda de estoque -->
 <dialog id="mDlg">
   <form id="mForm" method="dialog">
     <h3 id="mTitle">Movimentar estoque</h3>
 
-    <label>Tipo
+    <label>
+      Tipo
       <select id="mType">
         <option value="out">Venda</option>
         <option value="in">Compra (reposição)</option>
@@ -173,21 +280,26 @@
     </label>
 
     <div class="row2">
-      <label>Quantidade
+      <label>
+        Quantidade
         <input id="mQty" type="number" min="1" step="1" value="1" required>
       </label>
-      <label>Valor unitário (R$)
+
+      <label>
+        Valor unitário (R$)
         <input id="mUnit" type="number" min="0" step="0.01">
       </label>
     </div>
 
     <div class="row2">
-      <label id="mPayBox">Forma de pagamento
+      <label id="mPayBox">
+        Forma de pagamento
         <select id="mPay">
           <option value="pix">Pix</option>
           <option value="dinheiro">Dinheiro</option>
           <option value="debito">Débito</option>
           <option value="credito">Crédito</option>
+          <option value="boleto">Boleto</option>
         </select>
       </label>
 
@@ -197,7 +309,8 @@
       </div>
     </div>
 
-    <label>Observação (opcional)
+    <label>
+      Observação (opcional)
       <input id="mNote" maxlength="60" placeholder="Ex.: Pedido do fornecedor">
     </label>
 
@@ -210,24 +323,29 @@
   </form>
 </dialog>
 
+<!-- Registro de despesas -->
 <dialog id="expenseDlg">
   <form id="expenseForm" method="dialog">
     <h3>Registrar despesa</h3>
 
-    <label>Valor da despesa (R$)
+    <label>
+      Valor da despesa (R$)
       <input id="expenseAmount" type="number" min="0.01" step="0.01" required placeholder="Ex.: 35,00">
     </label>
 
-    <label>Forma de pagamento
+    <label>
+      Forma de pagamento
       <select id="expensePay">
         <option value="dinheiro">Dinheiro</option>
         <option value="pix">Pix</option>
         <option value="debito">Débito</option>
         <option value="credito">Crédito</option>
+        <option value="boleto">Boleto</option>
       </select>
     </label>
 
-    <label>Descrição
+    <label>
+      Descrição
       <input id="expenseNote" maxlength="80" placeholder="Ex.: Compra de material de limpeza">
     </label>
 
@@ -240,10 +358,11 @@
   </form>
 </dialog>
 
-
+<!-- Ordem de carregamento necessária para a aplicação -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
 <script src="supabase-auth.js"></script>
 <script src="script.js"></script>
+
 </body>
 </html>
