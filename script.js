@@ -1,7 +1,14 @@
-
 (function () {
+  'use strict';
+
   var KEY = 'adega-estoque-v1';
-  var S = { products: [], log: [], cashDays: {} };
+
+  var S = {
+    products: [],
+    log: [],
+    cashDays: {}
+  };
+
   var editId = null;
   var moveId = null;
   var delArmed = false;
@@ -30,13 +37,20 @@
     boleto: 'Boleto'
   };
 
+  var VALID_TYPES = ['in', 'out', 'loss', 'expense'];
+  var VALID_PAYMENTS = ['pix', 'dinheiro', 'debito', 'credito', 'boleto'];
+
   function uid() {
     return Date.now().toString(36) +
-      Math.random().toString(36).slice(2, 6);
+      Math.random().toString(36).slice(2, 8);
   }
 
-  function esc(s) {
-    return String(s).replace(/[&<>"']/g, function (c) {
+  function roundMoney(value) {
+    return Math.round((value + Number.EPSILON) * 100) / 100;
+  }
+
+  function esc(value) {
+    return String(value).replace(/[&<>"']/g, function (c) {
       return {
         '&': '&amp;',
         '<': '&lt;',
@@ -57,12 +71,102 @@
     return $('fDate').value || dateKey(new Date());
   }
 
+  function validNumber(value) {
+    return typeof value === 'number' && Number.isFinite(value);
+  }
+
+  function validNonNegative(value) {
+    return validNumber(value) && value >= 0;
+  }
+
+  function validInteger(value) {
+    return validNumber(value) &&
+      Number.isInteger(value) &&
+      value >= 0;
+  }
+
+  function snapshot() {
+    return JSON.stringify(S);
+  }
+
   function save() {
     try {
       localStorage.setItem(KEY, JSON.stringify(S));
+      return true;
     } catch (e) {
-      alert('Não foi possível salvar os dados neste navegador.');
+      alert(
+        'Não foi possível salvar os dados. ' +
+        'Verifique o armazenamento disponível no navegador.'
+      );
+      return false;
     }
+  }
+
+  function persistOrRollback(previous) {
+    if (save()) {
+      return true;
+    }
+
+    S = JSON.parse(previous);
+    return false;
+  }
+
+  function normalizeProduct(p) {
+    if (!p || typeof p !== 'object') {
+      return null;
+    }
+
+    if (
+      typeof p.name !== 'string' ||
+      typeof p.cat !== 'string' ||
+      !validInteger(p.qty) ||
+      !validInteger(p.min) ||
+      !validNonNegative(p.cost) ||
+      !validNonNegative(p.price)
+    ) {
+      return null;
+    }
+
+    return {
+      id: typeof p.id === 'string' && p.id
+        ? p.id
+        : uid(),
+      name: p.name.slice(0, 80),
+      cat: p.cat.slice(0, 40),
+      qty: p.qty,
+      min: p.min,
+      cost: roundMoney(p.cost),
+      price: roundMoney(p.price)
+    };
+  }
+
+  function normalizeMovement(m) {
+    if (
+      !m ||
+      typeof m !== 'object' ||
+      !validNumber(m.t) ||
+      !VALID_TYPES.includes(m.type) ||
+      typeof m.name !== 'string' ||
+      !validInteger(m.qty) ||
+      !validNonNegative(m.total) ||
+      !validNonNegative(m.cost)
+    ) {
+      return null;
+    }
+
+    return {
+      t: m.t,
+      name: m.name.slice(0, 80),
+      type: m.type,
+      qty: m.qty,
+      note: typeof m.note === 'string'
+        ? m.note.slice(0, 80)
+        : '',
+      unit: validNonNegative(m.unit) ? m.unit : 0,
+      total: roundMoney(m.total),
+      cost: roundMoney(m.cost),
+      pay: typeof m.pay === 'string' ? m.pay : ''
+    };
   }
 
   function load() {
@@ -70,24 +174,43 @@
 
     try {
       raw = localStorage.getItem(KEY);
-    } catch (e) {}
+    } catch (e) {
+      alert('Não foi possível acessar o armazenamento deste navegador.');
+    }
 
     if (raw) {
       try {
         var d = JSON.parse(raw);
 
         if (d && Array.isArray(d.products)) {
-          S = {
-            products: d.products,
-            log: Array.isArray(d.log) ? d.log : [],
-            cashDays: d.cashDays &&
-              typeof d.cashDays === 'object'
-              ? d.cashDays
-              : {}
-          };
+          S.products = d.products
+            .map(normalizeProduct)
+            .filter(Boolean);
+
+          S.log = Array.isArray(d.log)
+            ? d.log.map(normalizeMovement).filter(Boolean).slice(0, 2000)
+            : [];
+
+          S.cashDays = d.cashDays &&
+            typeof d.cashDays === 'object' &&
+            !Array.isArray(d.cashDays)
+            ? d.cashDays
+            : {};
+
           return;
         }
-      } catch (e) {}
+      } catch (e) {
+        alert(
+          'Os dados salvos não puderam ser lidos corretamente. ' +
+          'Verifique o armazenamento antes de continuar.'
+        );
+        S = {
+          products: [],
+          log: [],
+          cashDays: {}
+        };
+        return;
+      }
     }
 
     S.products = [
@@ -153,8 +276,7 @@
     out: 'Esgotado'
   };
 
-  function renderFinance() {
-    var key = selectedDate();
+  function getDayBounds(key) {
     var parts = key.split('-').map(Number);
 
     var start = new Date(
@@ -169,6 +291,16 @@
       parts[2] + 1
     ).getTime();
 
+    return {
+      start: start,
+      end: end
+    };
+  }
+
+  function renderFinance() {
+    var key = selectedDate();
+    var bounds = getDayBounds(key);
+
     var rev = 0;
     var buy = 0;
     var cogs = 0;
@@ -180,7 +312,7 @@
     var cashExpenses = 0;
 
     S.log.forEach(function (m) {
-      if (!m.t || m.t < start || m.t >= end) {
+      if (m.t < bounds.start || m.t >= bounds.end) {
         return;
       }
 
@@ -214,12 +346,14 @@
 
     var profit = rev - cogs;
     var day = S.cashDays[key] || {};
-    var opening = Number(day.opening) || 0;
 
-    var expected = opening +
-      cashSales -
-      cashPurchases -
-      cashExpenses;
+    var opening = validNonNegative(Number(day.opening))
+      ? Number(day.opening)
+      : 0;
+
+    var expected = roundMoney(
+      opening + cashSales - cashPurchases - cashExpenses
+    );
 
     $('fiRev').textContent = brl.format(rev);
     $('fiBuy').textContent = brl.format(buy);
@@ -232,20 +366,15 @@
     $('fiExpenses').textContent = brl.format(expenses);
 
     $('cashSales').textContent = brl.format(cashSales);
-    $('cashPurchases').textContent =
-      brl.format(cashPurchases);
-
-    $('cashExpenses').textContent =
-      brl.format(cashExpenses);
-
-    $('cashExpected').textContent =
-      brl.format(expected);
+    $('cashPurchases').textContent = brl.format(cashPurchases);
+    $('cashExpenses').textContent = brl.format(cashExpenses);
+    $('cashExpected').textContent = brl.format(expected);
 
     $('cashOpen').value =
       day.opening == null ? '' : day.opening;
 
     if (day.closing != null && day.closing !== '') {
-      var diff = Number(day.closing) - expected;
+      var diff = roundMoney(Number(day.closing) - expected);
 
       $('cashClose').value = day.closing;
 
@@ -261,10 +390,7 @@
           : 'Confira a diferença e as movimentações.';
     } else {
       $('cashClose').value = '';
-
-      $('cashDifference').textContent =
-        'Ainda não fechado';
-
+      $('cashDifference').textContent = 'Ainda não fechado';
       $('cashDifference').style.color = '';
 
       $('cashCloseStatus').textContent =
@@ -332,15 +458,11 @@
       var st = status(p);
 
       var pct = p.min > 0
-        ? Math.min(100, Math.round(
-            p.qty / (p.min * 2) * 100
-          ))
+        ? Math.min(100, Math.round(p.qty / (p.min * 2) * 100))
         : (p.qty > 0 ? 100 : 0);
 
       var margin = p.price > 0
-        ? Math.round(
-            (p.price - p.cost) / p.price * 100
-          ) + '%'
+        ? Math.round((p.price - p.cost) / p.price * 100) + '%'
         : '—';
 
       return '<tr data-id="' + esc(p.id) + '">' +
@@ -372,42 +494,25 @@
     var low = 0;
 
     S.products.forEach(function (p) {
-      units += Number(p.qty) || 0;
-      val += (Number(p.qty) || 0) *
-        (Number(p.cost) || 0);
+      units += p.qty;
+      val += p.qty * p.cost;
 
       if (status(p) !== 'ok') {
         low++;
       }
     });
 
-    $('stUnits').textContent =
-      units.toLocaleString('pt-BR');
-
+    $('stUnits').textContent = units.toLocaleString('pt-BR');
     $('stValue').textContent = brl.format(val);
     $('stLow').textContent = low;
-
     $('stLowBox').classList.toggle('alert', low > 0);
 
     renderFinance();
 
-    var key = selectedDate();
-    var parts = key.split('-').map(Number);
-
-    var start = new Date(
-      parts[0],
-      parts[1] - 1,
-      parts[2]
-    ).getTime();
-
-    var end = new Date(
-      parts[0],
-      parts[1] - 1,
-      parts[2] + 1
-    ).getTime();
+    var bounds = getDayBounds(selectedDate());
 
     var dayLog = S.log.filter(function (m) {
-      return m.t >= start && m.t < end;
+      return m.t >= bounds.start && m.t < bounds.end;
     });
 
     $('log').innerHTML = dayLog.length
@@ -424,11 +529,8 @@
             : (m.type === 'in' ? '+' : '−');
 
           var money = m.type === 'loss'
-            ? brl.format(
-                (Number(m.cost) || 0) *
-                (Number(m.qty) || 0)
-              )
-            : brl.format(Number(m.total) || 0);
+            ? brl.format(m.cost * m.qty)
+            : brl.format(m.total);
 
           var meta = [
             TYPE[m.type] || '',
@@ -439,8 +541,7 @@
           return '<li><span>' +
             (m.type === 'expense'
               ? '<strong>Despesa</strong> '
-              : '<strong>' + sign + m.qty +
-                '</strong> ') +
+              : '<strong>' + sign + m.qty + '</strong> ') +
             esc(m.name) +
             (meta ? ' <small>· ' + meta + '</small>' : '') +
             '</span><span class="amt">' +
@@ -484,6 +585,7 @@
 
   function suggestUnit() {
     var p = find(moveId);
+
     if (!p) return;
 
     var type = $('mType').value;
@@ -499,10 +601,16 @@
   }
 
   function calcTotal() {
-    var qty = parseInt($('mQty').value, 10) || 0;
-    var unit = parseFloat($('mUnit').value) || 0;
+    var qty = Number($('mQty').value);
+    var unit = Number($('mUnit').value);
 
-    $('mTotal').textContent = brl.format(qty * unit);
+    if (!validInteger(qty) || !validNonNegative(unit)) {
+      $('mTotal').textContent = brl.format(0);
+    } else {
+      $('mTotal').textContent = brl.format(
+        roundMoney(qty * unit)
+      );
+    }
 
     $('mTotalLabel').textContent =
       $('mType').value === 'loss'
@@ -539,7 +647,6 @@
   $('mType').addEventListener('change', suggestUnit);
   $('mQty').addEventListener('input', calcTotal);
   $('mUnit').addEventListener('input', calcTotal);
-
   $('fDate').addEventListener('change', render);
 
   $('todayBtn').onclick = function () {
@@ -548,38 +655,52 @@
   };
 
   $('saveOpening').onclick = function () {
-    var value = parseFloat($('cashOpen').value);
+    var value = Number($('cashOpen').value);
 
-    if (!Number.isFinite(value) || value < 0) {
+    if (
+      $('cashOpen').value.trim() === '' ||
+      !validNonNegative(value)
+    ) {
       alert('Informe um fundo inicial válido.');
       return;
     }
 
+    var previous = snapshot();
     var key = selectedDate();
 
     S.cashDays[key] = S.cashDays[key] || {};
-    S.cashDays[key].opening =
-      Math.round(value * 100) / 100;
+    S.cashDays[key].opening = roundMoney(value);
 
-    save();
+    if (!persistOrRollback(previous)) {
+      renderFinance();
+      return;
+    }
+
     renderFinance();
   };
 
   $('saveClosing').onclick = function () {
-    var value = parseFloat($('cashClose').value);
+    var value = Number($('cashClose').value);
 
-    if (!Number.isFinite(value) || value < 0) {
+    if (
+      $('cashClose').value.trim() === '' ||
+      !validNonNegative(value)
+    ) {
       alert('Informe o dinheiro contado no caixa.');
       return;
     }
 
+    var previous = snapshot();
     var key = selectedDate();
 
     S.cashDays[key] = S.cashDays[key] || {};
-    S.cashDays[key].closing =
-      Math.round(value * 100) / 100;
+    S.cashDays[key].closing = roundMoney(value);
 
-    save();
+    if (!persistOrRollback(previous)) {
+      renderFinance();
+      return;
+    }
+
     renderFinance();
   };
 
@@ -588,22 +709,11 @@
 
     var name = $('fName').value.trim();
     var cat = $('fCat').value.trim();
-    var qty = Math.max(
-      0,
-      parseInt($('fQty').value, 10) || 0
-    );
-    var min = Math.max(
-      0,
-      parseInt($('fMin').value, 10) || 0
-    );
-    var cost = Math.max(
-      0,
-      parseFloat($('fCost').value) || 0
-    );
-    var price = Math.max(
-      0,
-      parseFloat($('fPrice').value) || 0
-    );
+
+    var qty = Number($('fQty').value);
+    var min = Number($('fMin').value);
+    var cost = Number($('fCost').value);
+    var price = Number($('fPrice').value);
 
     if (!name || !cat) {
       $('pErr').textContent =
@@ -611,11 +721,35 @@
       return;
     }
 
+    if (name.length > 80 || cat.length > 40) {
+      $('pErr').textContent =
+        'O nome deve ter até 80 caracteres e a categoria até 40.';
+      return;
+    }
+
+    if (!validInteger(min) || !validNonNegative(cost) ||
+        !validNonNegative(price)) {
+      $('pErr').textContent =
+        'Confira os valores: quantidade mínima e preços devem ser válidos.';
+      return;
+    }
+
+    if (!editId && !validInteger(qty)) {
+      $('pErr').textContent =
+        'A quantidade inicial deve ser um número inteiro igual ou maior que zero.';
+      return;
+    }
+
+    cost = roundMoney(cost);
+    price = roundMoney(price);
+
     if (price < cost) {
       $('pErr').textContent =
         'O preço de venda está abaixo do custo. Revise os valores.';
       return;
     }
+
+    var previous = snapshot();
 
     if (editId) {
       var p = find(editId);
@@ -643,7 +777,10 @@
       });
     }
 
-    save();
+    if (!persistOrRollback(previous)) {
+      return;
+    }
+
     render();
     $('pDlg').close();
   };
@@ -655,20 +792,27 @@
       return;
     }
 
+    var previous = snapshot();
+
     S.products = S.products.filter(function (p) {
       return p.id !== editId;
     });
 
-    save();
+    if (!persistOrRollback(previous)) {
+      return;
+    }
+
     render();
     $('pDlg').close();
   };
 
   $('rows').onclick = function (e) {
     var button = e.target.closest('button[data-act]');
+
     if (!button) return;
 
     var row = button.closest('tr');
+
     if (!row) return;
 
     var id = row.getAttribute('data-id');
@@ -681,6 +825,7 @@
     moveId = id;
 
     var p = find(id);
+
     if (!p) return;
 
     $('mTitle').textContent = p.name;
@@ -700,29 +845,40 @@
     e.preventDefault();
 
     var p = find(moveId);
+
     if (!p) {
       $('mErr').textContent = 'Produto não encontrado.';
       return;
     }
 
     var type = $('mType').value;
-    var qty = parseInt($('mQty').value, 10);
+    var qty = Number($('mQty').value);
     var unit = type === 'loss'
-      ? 0
-      : parseFloat($('mUnit').value);
+      ? p.cost
+      : Number($('mUnit').value);
 
-    if (!qty || qty < 1) {
-      $('mErr').textContent =
-        'Informe uma quantidade maior que zero.';
+    if (!VALID_TYPES.includes(type) ||
+        type === 'expense') {
+      $('mErr').textContent = 'Tipo de movimentação inválido.';
       return;
     }
 
-    if (
-      type !== 'loss' &&
-      (!Number.isFinite(unit) || unit < 0)
-    ) {
+    if (!validInteger(qty) || qty < 1) {
+      $('mErr').textContent =
+        'Informe uma quantidade inteira maior que zero.';
+      return;
+    }
+
+    if (type !== 'loss' && !validNonNegative(unit)) {
       $('mErr').textContent =
         'Informe um valor unitário válido.';
+      return;
+    }
+
+    if (type !== 'loss' &&
+        !VALID_PAYMENTS.includes($('mPay').value)) {
+      $('mErr').textContent =
+        'Selecione uma forma de pagamento válida.';
       return;
     }
 
@@ -739,11 +895,13 @@
       return;
     }
 
+    unit = roundMoney(unit);
+
     if (
       type === 'out' &&
       unit < p.cost &&
       !confirm(
-        'Este valor está abaixo do custo (' +
+        'Este valor está abaixo do custo atual (' +
         brl.format(p.cost) +
         '). Registrar a venda mesmo assim?'
       )
@@ -751,7 +909,22 @@
       return;
     }
 
-    p.qty += type === 'in' ? qty : -qty;
+    var previous = snapshot();
+    var oldQty = p.qty;
+    var oldCost = p.cost;
+
+    if (type === 'in') {
+      var newQty = oldQty + qty;
+
+      // Custo médio ponderado da mercadoria em estoque.
+      p.cost = roundMoney(
+        ((oldQty * oldCost) + (qty * unit)) / newQty
+      );
+
+      p.qty = newQty;
+    } else {
+      p.qty -= qty;
+    }
 
     S.log.unshift({
       t: Date.now(),
@@ -760,14 +933,19 @@
       qty: qty,
       note: $('mNote').value.trim(),
       unit: unit,
-      total: Math.round(unit * qty * 100) / 100,
-      cost: p.cost,
+      total: type === 'loss'
+        ? 0
+        : roundMoney(unit * qty),
+      cost: type === 'in' ? unit : oldCost,
       pay: type === 'loss' ? '' : $('mPay').value
     });
 
     S.log = S.log.slice(0, 2000);
 
-    save();
+    if (!persistOrRollback(previous)) {
+      return;
+    }
+
     render();
     $('mDlg').close();
   };
@@ -775,15 +953,27 @@
   $('expenseForm').onsubmit = function (e) {
     e.preventDefault();
 
-    var amount = parseFloat($('expenseAmount').value);
+    var amount = Number($('expenseAmount').value);
     var note = $('expenseNote').value.trim();
     var pay = $('expensePay').value;
 
-    if (!Number.isFinite(amount) || amount <= 0) {
+    if (
+      $('expenseAmount').value.trim() === '' ||
+      !validNonNegative(amount) ||
+      amount <= 0
+    ) {
       $('expenseErr').textContent =
         'Informe uma despesa maior que zero.';
       return;
     }
+
+    if (!VALID_PAYMENTS.includes(pay)) {
+      $('expenseErr').textContent =
+        'Selecione uma forma de pagamento válida.';
+      return;
+    }
+
+    var previous = snapshot();
 
     S.log.unshift({
       t: Date.now(),
@@ -791,15 +981,18 @@
       type: 'expense',
       qty: 1,
       note: note,
-      total: Math.round(amount * 100) / 100,
-      unit: amount,
+      total: roundMoney(amount),
+      unit: roundMoney(amount),
       cost: 0,
       pay: pay
     });
 
     S.log = S.log.slice(0, 2000);
 
-    save();
+    if (!persistOrRollback(previous)) {
+      return;
+    }
+
     render();
     $('expenseDlg').close();
   };
