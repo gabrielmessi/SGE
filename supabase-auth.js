@@ -1,3 +1,4 @@
+
 (function () {
   "use strict";
 
@@ -10,6 +11,8 @@
   var loadedUserId = null;
   var activationPromise = null;
   var savingPromise = Promise.resolve();
+  var realtimeChannel = null;
+  var lastRemoteData = null;
   var readyResolved = false;
   var resolveReady;
 
@@ -72,6 +75,79 @@
 
     element.textContent = message;
     element.style.color = isError ? "#b91c1c" : "#166534";
+  }
+
+  function stopRealtime() {
+    if (realtimeChannel && client) {
+      client.removeChannel(realtimeChannel);
+      realtimeChannel = null;
+    }
+
+    lastRemoteData = null;
+  }
+
+  function startRealtime() {
+    stopRealtime();
+
+    if (!client || !activeUser) return;
+
+    realtimeChannel = client
+      .channel("sge-shared-" + COMPANY_ID)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "sge_shared_data",
+          filter: "company_id=eq." + COMPANY_ID
+        },
+        function (payload) {
+          if (
+            !activeUser ||
+            loadedUserId !== activeUser.id ||
+            !payload.new ||
+            !payload.new.data
+          ) {
+            return;
+          }
+
+          var remoteData = normalizeData(payload.new.data);
+          var remoteJSON = JSON.stringify(remoteData);
+
+          // Ignora dados que já estão aplicados nesta aba.
+          if (remoteJSON === lastRemoteData) return;
+
+          lastRemoteData = remoteJSON;
+
+          try {
+            setLocalData(remoteData);
+
+            // Atualiza a interface sem fazer uma nova gravação no banco.
+            if (typeof window.SGEApplyRemoteData === "function") {
+              window.SGEApplyRemoteData(remoteData);
+            } else {
+              console.warn(
+                "Crie window.SGEApplyRemoteData no script.js para atualizar a tela."
+              );
+            }
+          } catch (error) {
+            console.error(
+              "Erro ao aplicar atualização recebida:",
+              error
+            );
+          }
+        }
+      )
+      .subscribe(function (status) {
+        if (status === "SUBSCRIBED") {
+          console.log("SGE: sincronização em tempo real conectada.");
+        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          console.error(
+            "SGE: falha na conexão em tempo real:",
+            status
+          );
+        }
+      });
   }
 
   function createInterface() {
@@ -314,7 +390,6 @@
     try {
       showMessage("Verificando autorização...", false);
 
-      // Confere se esta conta foi autorizada pelo administrador.
       var membership = await client
         .from("sge_company_members")
         .select("user_id, role")
@@ -324,8 +399,11 @@
       if (membership.error) throw membership.error;
 
       if (!membership.data) {
+        stopRealtime();
         activeUser = null;
         loadedUserId = null;
+
+        if (screen) screen.style.display = "flex";
 
         showMessage(
           "Esta conta ainda não tem autorização para acessar o estoque. " +
@@ -336,7 +414,6 @@
         return;
       }
 
-      // Todas as contas autorizadas leem a mesma linha da empresa.
       var result = await client
         .from("sge_shared_data")
         .select("data")
@@ -367,12 +444,20 @@
 
       activeUser = user;
       loadedUserId = user.id;
+      lastRemoteData = JSON.stringify(sharedData);
+
+      if (typeof window.SGEApplyRemoteData === "function") {
+        window.SGEApplyRemoteData(sharedData);
+      }
+
+      startRealtime();
 
       if (screen) screen.style.display = "none";
 
       showUserBar(user.email);
       finishReady();
     } catch (error) {
+      stopRealtime();
       activeUser = null;
       loadedUserId = null;
 
@@ -409,6 +494,7 @@
         var result = await client.auth.signOut();
         if (result.error) throw result.error;
 
+        stopRealtime();
         activeUser = null;
         loadedUserId = null;
 
@@ -433,11 +519,11 @@
       return;
     }
 
-    // Evita duas gravações simultâneas iniciadas nesta mesma aba.
     savingPromise = savingPromise.catch(function () {}).then(async function () {
       if (!activeUser || loadedUserId !== activeUser.id) return;
 
       var data = getLocalData();
+      var serialized = JSON.stringify(data);
 
       var result = await client
         .from("sge_shared_data")
@@ -453,6 +539,8 @@
         console.error("Erro ao sincronizar SGE:", result.error.message);
         throw result.error;
       }
+
+      lastRemoteData = serialized;
     });
 
     return savingPromise;
@@ -495,6 +583,7 @@
               console.error("Erro ao ativar conta:", error.message);
             }
           } else if (event === "SIGNED_OUT") {
+            stopRealtime();
             activeUser = null;
             loadedUserId = null;
           }
