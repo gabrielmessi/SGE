@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Adega · Controle de estoque</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;700&family=Young+Serif&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+  <div>
+    <img class="brand" src="IMG-20261018-WA0015.jpg" alt="Império das Bebidas">
+    <h1>Estoque</h1>
+    <p class="sub">Cadastre as bebidas, registre entradas e saídas e veja o que precisa repor.</p>
+  </div>
+  <button id="addBtn" class="primary">Novo produto</button>
+</header>
+
+  <section class="stats" aria-label="Resumo">
+    <div class="stat"><b id="stUnits">0</b><span>garrafas e unidades em estoque</span></div>
+    <div class="stat"><b id="stValue">R$ 0,00</b><span>valor do estoque, a preço de custo</span></div>
+    <div class="stat" id="stLowBox"><b id="stLow">0</b><span>produtos para repor</span></div>
+  </section>
+
+  <h1>Financeiro</h1>
+<div class="bar">
+  <select id="fPeriod" aria-label="Período">
+    <option value="today">Hoje</option>
+    <option value="30" selected>Últimos 30 dias</option>
+    <option value="all">Todo o período</option>
+  </select>
+</div>
+<section class="stats four" aria-label="Financeiro">
+  <div class="stat"><b id="fiRev">R$ 0,00</b><span>vendas</span></div>
+  <div class="stat"><b id="fiBuy">R$ 0,00</b><span>compras</span></div>
+  <div class="stat"><b id="fiProfit">R$ 0,00</b><span>lucro das vendas (venda − custo)</span></div>
+  <div class="stat"><b id="fiLoss">R$ 0,00</b><span>perdas, a preço de custo</span></div>
+</section>
+
+  <div class="bar">
+    <input type="search" id="q" placeholder="Buscar por nome" aria-label="Buscar por nome">
+    <select id="catFilter" aria-label="Filtrar por categoria"></select>
+    <select id="statusFilter" aria-label="Filtrar por situação">
+      <option value="">Todas as situações</option>
+      <option value="low">Para repor</option>
+      <option value="ok">Estoque normal</option>
+    </select>
+  </div>
+
+  <div class="tablebox">
+    <table>
+      <thead><tr>
+        <th>Produto</th><th>Estoque</th><th class="n">Mínimo</th><th class="n">Preço de venda</th><th class="n">Margem</th><th></th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div id="empty" class="empty" hidden>Nenhum produto encontrado. Use “Novo produto” para cadastrar.</div>
+  </div>
+
+  <h2>Últimas movimentações</h2>
+  <ul class="log" id="log"></ul>
+</div>
+
+<dialog id="pDlg">
+  <form id="pForm" method="dialog">
+    <h3 id="pTitle">Novo produto</h3>
+    <label>Nome<input id="fName" required maxlength="80" placeholder="Ex.: Malbec Reserva 750 ml"></label>
+    <label>Categoria<input id="fCat" required maxlength="40" list="cats" placeholder="Ex.: Vinho tinto"></label>
+    <datalist id="cats"></datalist>
+    <div class="row2">
+      <label>Quantidade inicial<input id="fQty" type="number" min="0" step="1" value="0"></label>
+      <label>Estoque mínimo<input id="fMin" type="number" min="0" step="1" value="6"></label>
+    </div>
+    <div class="row2">
+      <label>Preço de custo (R$)<input id="fCost" type="number" min="0" step="0.01" value="0"></label>
+      <label>Preço de venda (R$)<input id="fPrice" type="number" min="0" step="0.01" value="0"></label>
+    </div>
+    <p class="err" id="pErr" role="alert"></p>
+    <div class="dlgacts">
+      <button type="button" id="delBtn" class="danger" hidden>Excluir produto</button>
+      <button type="button" id="pCancel">Cancelar</button>
+      <button type="submit" class="primary">Salvar produto</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="mDlg">
+  <form id="mForm" method="dialog">
+    <h3 id="mTitle">Movimentar estoque</h3>
+    <label>Tipo
+      <select id="mType">
+        <option value="out">Venda</option>
+        <option value="in">Compra (reposição)</option>
+        <option value="loss">Perda ou quebra</option>
+      </select>
+    </label>
+    <div class="row2">
+      <label>Quantidade<input id="mQty" type="number" min="1" step="1" value="1" required></label>
+      <label>Valor unitário (R$)<input id="mUnit" type="number" min="0" step="0.01"></label>
+    </div>
+    <div class="row2">
+      <label id="mPayBox">Pagamento
+        <select id="mPay">
+          <option value="pix">Pix</option><option value="dinheiro">Dinheiro</option>
+          <option value="debito">Débito</option><option value="credito">Crédito</option>
+        </select>
+      </label>
+      <div class="mtotal"><span id="mTotalLabel">Total</span><b id="mTotal">R$ 0,00</b></div>
+    </div>
+    <label>Observação (opcional)<input id="mNote" maxlength="60" placeholder="Ex.: Pedido do fornecedor"></label>
+    <p class="err" id="mErr" role="alert"></p>
+    <div class="dlgacts">
+      <button type="button" id="mCancel">Cancelar</button>
+      <button type="submit" class="primary">Registrar</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="script.js"></script>
+</body>
+</html>
