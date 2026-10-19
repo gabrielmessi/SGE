@@ -1,5 +1,11 @@
+// O SGE só inicia depois que o Supabase verificar o login e carregar os dados.
 (function () {
-  'use strict';
+  var cloudReady = window.SGECloud && window.SGECloud.ready
+    ? window.SGECloud.ready
+    : Promise.resolve();
+
+  cloudReady.then(function () {
+    'use strict';
 
   var KEY = 'adega-estoque-v1';
 
@@ -92,6 +98,14 @@
   function save() {
     try {
       localStorage.setItem(KEY, JSON.stringify(S));
+
+      // Mantém o salvamento local e solicita a sincronização com o Supabase.
+      if (window.SGECloud && typeof window.SGECloud.syncNow === 'function') {
+        window.SGECloud.syncNow().catch(function (error) {
+          console.error('Erro ao sincronizar com o Supabase:', error);
+        });
+      }
+
       return true;
     } catch (e) {
       alert(
@@ -1005,4 +1019,12 @@
 
   load();
   render();
+
+  // Sincroniza os dados carregados depois da inicialização.
+  if (window.SGECloud && typeof window.SGECloud.syncNow === 'function') {
+    window.SGECloud.syncNow().catch(function (error) {
+      console.error('Erro ao sincronizar os dados iniciais:', error);
+    });
+  }
+  });
 })();
