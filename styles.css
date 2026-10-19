@@ -1,0 +1,116 @@
+:root{
+  --bg:#dcdfd8;--surface:#fbfbf8;--line:#d5d9d1;--text:#1d2421;--muted:#5e6862;
+  --wine:gold;--on-wine:#000;--ok:#2f6b4f;--warn:#a85a12;--bad:#a3262f;--track:#e1e5dd;
+  color-scheme:light;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#131915;--surface:#1b231e;--line:#2c372f;--text:#e7eae4;--muted:#9aa59d;
+    --wine:#d96a7c;--on-wine:#1a0a0d;--ok:#6cc39a;--warn:#e0a05a;--bad:#ef7b83;--track:#27312a;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#131915;--surface:#1b231e;--line:#2c372f;--text:#e7eae4;--muted:#9aa59d;
+  --wine:#d96a7c;--on-wine:#1a0a0d;--ok:#6cc39a;--warn:#e0a05a;--bad:#ef7b83;--track:#27312a;
+  color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+body{margin:0;background:var(--bg);color:var(--text);font:400 16px/1.5 Figtree,system-ui,sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:20px 16px 48px}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:20px}
+h1{font:400 clamp(1.8rem,5vw,2.6rem)/1.1 "Young Serif",Georgia,serif;margin:0;color:goldenrod}
+.sub{color:var(--muted);margin:4px 0 0}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;min-height:40px}
+button:hover{border-color:var(--muted)}
+button.primary{background:var(--wine);color:var(--on-wine);border-color:var(--wine);font-weight:700}
+button.danger{color:var(--bad);border-color:var(--bad)}
+:focus-visible{outline:3px solid goldenrod;outline-offset:2px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.stat b{display:block;font:400 1.6rem/1.2 "Young Serif",Georgia,serif}
+.stat span{color:var(--muted);font-size:.9rem}
+.stat.alert b{color:var(--bad)}
+.bar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.bar input,.bar select{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 12px;min-height:40px}
+.bar input[type=search]{flex:1;min-width:180px}
+.tablebox{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:720px}
+th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-weight:700;font-size:.85rem;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.cat{color:var(--muted);font-size:.85rem}
+.level{display:flex;align-items:center;gap:10px;min-width:170px}
+.level .track{flex:1;height:8px;border-radius:4px;background:var(--track);overflow:hidden}
+.level .fill{height:100%;border-radius:4px}
+.tag{font-size:.8rem;font-weight:700;white-space:nowrap}
+.ok{color:var(--ok)}.low{color:var(--warn)}.out{color:var(--bad)}
+.fill.ok{background:var(--ok)}.fill.low{background:var(--warn)}.fill.out{background:var(--bad)}
+.acts{display:flex;gap:6px;justify-content:flex-end}
+.acts button{padding:6px 10px;min-height:36px}
+.empty{padding:32px 16px;text-align:center;color:var(--muted)}
+h2{font:400 1.3rem/1.2 "Young Serif",Georgia,serif;margin:28px 0 10px;color:goldenrod}
+.log{list-style:none;margin:0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.log li{display:flex;justify-content:space-between;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.log li:last-child{border-bottom:0}
+.log small{color:var(--muted)}
+.log .amt{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.log .amt small{display:block}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);padding:20px;width:min(420px,92vw)}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+dialog h3{font:400 1.3rem/1.2 "Young Serif",Georgia,serif;margin:0 0 14px}
+label{display:block;font-size:.9rem;margin-bottom:10px;color:var(--muted)}
+label input,label select{display:block;width:100%;margin-top:4px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:40px;color:var(--text)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dlgacts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+.err{color:red;font-size:.9rem;min-height:1.3em;margin:0}
+.stats.four{grid-template-columns:repeat(4,1fr)}
+.mtotal{display:flex;flex-direction:column;justify-content:flex-end;margin-bottom:10px;color:var(--muted);font-size:.9rem}
+.mtotal b{color:var(--text);font-size:1.2rem;min-height:40px;display:flex;align-items:center}
+@media (max-width:760px){
+  .stats.four{grid-template-columns:1fr 1fr}
+  .stats.four .stat b{font-size:1.25rem}
+}
+@media (max-width:560px){.stats{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:no-preference){.fill{transition:width .3s}}
+
+/* Botão Cancelar (produto e movimentação) */
+#pCancel,#mCancel{
+  background:#7a1e2c;
+  color:#fff;
+  border-color:#7a1e2c;
+}
+
+/* Botões Registrar e Salvar produto */
+#mForm .primary,
+#pForm .primary{
+  background:green;
+  border-color:green;
+  color:#fff;
+}
+
+/* Logo da distribuidora */
+img.brand{
+  display:block;
+  width:100%;
+  max-width:320px;
+  height:auto;
+  background:#000;
+  border-radius:18px;
+  margin-bottom:16px;
+  position:relative;
+  top:11px;
+}
+
+/* Botão Novo produto */
+#addBtn{
+  background:goldenrod;
+  border-color:goldenrod;
+  color:#000;
+  margin-top:24px;
+}
