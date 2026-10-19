@@ -1,45 +1,91 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Adega · Controle de estoque</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;700&family=Young+Serif&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Adega · Estoque e caixa</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;700&family=Young+Serif&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div class="wrap">
   <header>
-  <div>
-    <img class="brand" src="IMG-20261018-WA0015.jpg" alt="Império das Bebidas">
-    <h1>Estoque</h1>
-    <p class="sub">Cadastre as bebidas, registre entradas e saídas e veja o que precisa repor.</p>
-  </div>
-  <button id="addBtn" class="primary">Novo produto</button>
-</header>
+    <div>
+      <img class="brand" src="IMG-20261018-WA0015.jpg" alt="Império das Bebidas">
+      <h1>Estoque</h1>
+      <p class="sub">Cadastre as bebidas, registre entradas e saídas e veja o que precisa repor.</p>
+    </div>
+    <button id="addBtn" class="primary">Novo produto</button>
+  </header>
 
-  <section class="stats" aria-label="Resumo">
+  <section class="stats" aria-label="Resumo do estoque">
     <div class="stat"><b id="stUnits">0</b><span>garrafas e unidades em estoque</span></div>
     <div class="stat"><b id="stValue">R$ 0,00</b><span>valor do estoque, a preço de custo</span></div>
     <div class="stat" id="stLowBox"><b id="stLow">0</b><span>produtos para repor</span></div>
   </section>
 
-  <h1>Financeiro</h1>
-<div class="bar">
-  <select id="fPeriod" aria-label="Período">
-    <option value="today">Hoje</option>
-    <option value="30" selected>Últimos 30 dias</option>
-    <option value="all">Todo o período</option>
-  </select>
-</div>
-<section class="stats four" aria-label="Financeiro">
-  <div class="stat"><b id="fiRev">R$ 0,00</b><span>vendas</span></div>
-  <div class="stat"><b id="fiBuy">R$ 0,00</b><span>compras</span></div>
-  <div class="stat"><b id="fiProfit">R$ 0,00</b><span>lucro das vendas (venda − custo)</span></div>
-  <div class="stat"><b id="fiLoss">R$ 0,00</b><span>perdas, a preço de custo</span></div>
-</section>
+  <h1>Financeiro diário</h1>
+
+  <div class="bar finance-filter">
+    <label class="date-label">
+      Dia do relatório
+      <input type="date" id="fDate" aria-label="Dia do relatório">
+    </label>
+    <button type="button" id="todayBtn">Hoje</button>
+    <button type="button" id="expenseBtn" class="primary">Registrar despesa</button>
+  </div>
+
+  <section class="stats finance-stats" aria-label="Resumo financeiro do dia">
+    <div class="stat"><b id="fiRev">R$ 0,00</b><span>vendas registradas</span></div>
+    <div class="stat"><b id="fiBuy">R$ 0,00</b><span>compras de estoque registradas</span></div>
+    <div class="stat"><b id="fiProfit">R$ 0,00</b><span>lucro bruto estimado (venda − custo dos produtos vendidos)</span></div>
+    <div class="stat"><b id="fiLoss">R$ 0,00</b><span>perdas a preço de custo</span></div>
+    <div class="stat"><b id="fiExpenses">R$ 0,00</b><span>despesas registradas</span></div>
+  </section>
+
+  <section class="cash-panel" aria-label="Conferência do caixa">
+    <h2>Conferência do caixa · <span id="cashDayLabel"></span></h2>
+    <p class="sub">O fundo inicial não é uma venda. O sistema estima o dinheiro esperado na gaveta usando apenas movimentações marcadas como pagas em dinheiro.</p>
+
+    <div class="cash-grid">
+      <div class="cash-field">
+        <label for="cashOpen">Fundo inicial (R$)</label>
+        <input id="cashOpen" type="number" min="0" step="0.01" placeholder="Ex.: 200,00">
+        <button type="button" id="saveOpening">Salvar fundo inicial</button>
+      </div>
+
+      <div class="cash-field">
+        <label>Vendas recebidas em dinheiro</label>
+        <b id="cashSales">R$ 0,00</b>
+      </div>
+
+      <div class="cash-field">
+        <label>Compras pagas em dinheiro</label>
+        <b id="cashPurchases">R$ 0,00</b>
+      </div>
+
+      <div class="cash-field">
+        <label>Despesas pagas em dinheiro</label>
+        <b id="cashExpenses">R$ 0,00</b>
+      </div>
+
+      <div class="cash-field highlight">
+        <label>Dinheiro esperado na gaveta</label>
+        <b id="cashExpected">R$ 0,00</b>
+      </div>
+
+      <div class="cash-field">
+        <label for="cashClose">Dinheiro contado no fechamento (R$)</label>
+        <input id="cashClose" type="number" min="0" step="0.01" placeholder="Informe o valor contado">
+        <button type="button" id="saveClosing">Conferir fechamento</button>
+      </div>
+    </div>
+
+    <p class="cash-result"><strong>Diferença:</strong> <span id="cashDifference">Ainda não fechado</span></p>
+    <p id="cashCloseStatus" class="sub" aria-live="polite">Informe o dinheiro contado na gaveta para comparar.</p>
+  </section>
 
   <div class="bar">
     <input type="search" id="q" placeholder="Buscar por nome" aria-label="Buscar por nome">
@@ -53,33 +99,59 @@
 
   <div class="tablebox">
     <table>
-      <thead><tr>
-        <th>Produto</th><th>Estoque</th><th class="n">Mínimo</th><th class="n">Preço de venda</th><th class="n">Margem</th><th></th>
-      </tr></thead>
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th>Estoque</th>
+          <th class="n">Mínimo</th>
+          <th class="n">Preço de venda</th>
+          <th class="n">Margem</th>
+          <th></th>
+        </tr>
+      </thead>
       <tbody id="rows"></tbody>
     </table>
     <div id="empty" class="empty" hidden>Nenhum produto encontrado. Use “Novo produto” para cadastrar.</div>
   </div>
 
-  <h2>Últimas movimentações</h2>
+  <h2>Movimentações do dia</h2>
   <ul class="log" id="log"></ul>
 </div>
 
 <dialog id="pDlg">
   <form id="pForm" method="dialog">
     <h3 id="pTitle">Novo produto</h3>
-    <label>Nome<input id="fName" required maxlength="80" placeholder="Ex.: Malbec Reserva 750 ml"></label>
-    <label>Categoria<input id="fCat" required maxlength="40" list="cats" placeholder="Ex.: Vinho tinto"></label>
+
+    <label>Nome
+      <input id="fName" required maxlength="80" placeholder="Ex.: Malbec Reserva 750 ml">
+    </label>
+
+    <label>Categoria
+      <input id="fCat" required maxlength="40" list="cats" placeholder="Ex.: Vinho tinto">
+    </label>
+
     <datalist id="cats"></datalist>
+
     <div class="row2">
-      <label>Quantidade inicial<input id="fQty" type="number" min="0" step="1" value="0"></label>
-      <label>Estoque mínimo<input id="fMin" type="number" min="0" step="1" value="6"></label>
+      <label>Quantidade inicial
+        <input id="fQty" type="number" min="0" step="1" value="0">
+      </label>
+      <label>Estoque mínimo
+        <input id="fMin" type="number" min="0" step="1" value="6">
+      </label>
     </div>
+
     <div class="row2">
-      <label>Preço de custo (R$)<input id="fCost" type="number" min="0" step="0.01" value="0"></label>
-      <label>Preço de venda (R$)<input id="fPrice" type="number" min="0" step="0.01" value="0"></label>
+      <label>Preço de custo (R$)
+        <input id="fCost" type="number" min="0" step="0.01" value="0">
+      </label>
+      <label>Preço de venda (R$)
+        <input id="fPrice" type="number" min="0" step="0.01" value="0">
+      </label>
     </div>
+
     <p class="err" id="pErr" role="alert"></p>
+
     <div class="dlgacts">
       <button type="button" id="delBtn" class="danger" hidden>Excluir produto</button>
       <button type="button" id="pCancel">Cancelar</button>
@@ -91,6 +163,7 @@
 <dialog id="mDlg">
   <form id="mForm" method="dialog">
     <h3 id="mTitle">Movimentar estoque</h3>
+
     <label>Tipo
       <select id="mType">
         <option value="out">Venda</option>
@@ -98,24 +171,71 @@
         <option value="loss">Perda ou quebra</option>
       </select>
     </label>
+
     <div class="row2">
-      <label>Quantidade<input id="mQty" type="number" min="1" step="1" value="1" required></label>
-      <label>Valor unitário (R$)<input id="mUnit" type="number" min="0" step="0.01"></label>
+      <label>Quantidade
+        <input id="mQty" type="number" min="1" step="1" value="1" required>
+      </label>
+      <label>Valor unitário (R$)
+        <input id="mUnit" type="number" min="0" step="0.01">
+      </label>
     </div>
+
     <div class="row2">
-      <label id="mPayBox">Pagamento
+      <label id="mPayBox">Forma de pagamento
         <select id="mPay">
-          <option value="pix">Pix</option><option value="dinheiro">Dinheiro</option>
-          <option value="debito">Débito</option><option value="credito">Crédito</option>
+          <option value="pix">Pix</option>
+          <option value="dinheiro">Dinheiro</option>
+          <option value="debito">Débito</option>
+          <option value="credito">Crédito</option>
         </select>
       </label>
-      <div class="mtotal"><span id="mTotalLabel">Total</span><b id="mTotal">R$ 0,00</b></div>
+
+      <div class="mtotal">
+        <span id="mTotalLabel">Total</span>
+        <b id="mTotal">R$ 0,00</b>
+      </div>
     </div>
-    <label>Observação (opcional)<input id="mNote" maxlength="60" placeholder="Ex.: Pedido do fornecedor"></label>
+
+    <label>Observação (opcional)
+      <input id="mNote" maxlength="60" placeholder="Ex.: Pedido do fornecedor">
+    </label>
+
     <p class="err" id="mErr" role="alert"></p>
+
     <div class="dlgacts">
       <button type="button" id="mCancel">Cancelar</button>
       <button type="submit" class="primary">Registrar</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="expenseDlg">
+  <form id="expenseForm" method="dialog">
+    <h3>Registrar despesa</h3>
+
+    <label>Valor da despesa (R$)
+      <input id="expenseAmount" type="number" min="0.01" step="0.01" required placeholder="Ex.: 35,00">
+    </label>
+
+    <label>Forma de pagamento
+      <select id="expensePay">
+        <option value="dinheiro">Dinheiro</option>
+        <option value="pix">Pix</option>
+        <option value="debito">Débito</option>
+        <option value="credito">Crédito</option>
+      </select>
+    </label>
+
+    <label>Descrição
+      <input id="expenseNote" maxlength="80" placeholder="Ex.: Compra de material de limpeza">
+    </label>
+
+    <p class="err" id="expenseErr" role="alert"></p>
+
+    <div class="dlgacts">
+      <button type="button" id="expenseCancel">Cancelar</button>
+      <button type="submit" class="primary">Salvar despesa</button>
     </div>
   </form>
 </dialog>
