@@ -1,245 +1,579 @@
-<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Adega · Estoque e caixa</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;700&family=Young+Serif&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-<div class="wrap">
-  <header>
-    <div>
-      <img class="brand" src="IMG-20261018-WA0015.jpg" alt="Império das Bebidas">
-      <h1>Estoque</h1>
-      <p class="sub">Cadastre as bebidas, registre entradas e saídas e veja o que precisa repor.</p>
-    </div>
-    <button id="addBtn" class="primary">Novo produto</button>
-  </header>
+:root {
+  --bg: #dcdfd8;
+  --surface: #fbfbf8;
+  --line: #d5d9d1;
+  --text: #1d2421;
+  --muted: #5e6862;
+  --wine: gold;
+  --on-wine: #000;
+  --ok: #2f6b4f;
+  --warn: #a85a12;
+  --bad: #a3262f;
+  --track: #e1e5dd;
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
 
-  <section class="stats" aria-label="Resumo do estoque">
-    <div class="stat"><b id="stUnits">0</b><span>garrafas e unidades em estoque</span></div>
-    <div class="stat"><b id="stValue">R$ 0,00</b><span>valor do estoque, a preço de custo</span></div>
-    <div class="stat" id="stLowBox"><b id="stLow">0</b><span>produtos para repor</span></div>
-  </section>
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131915;
+    --surface: #1b231e;
+    --line: #2c372f;
+    --text: #e7eae4;
+    --muted: #9aa59d;
+    --wine: #d96a7c;
+    --on-wine: #1a0a0d;
+    --ok: #6cc39a;
+    --warn: #e0a05a;
+    --bad: #ef7b83;
+    --track: #27312a;
+    color-scheme: dark;
+  }
+}
 
-  <h1>Financeiro diário</h1>
+:root[data-theme="dark"] {
+  --bg: #131915;
+  --surface: #1b231e;
+  --line: #2c372f;
+  --text: #e7eae4;
+  --muted: #9aa59d;
+  --wine: #d96a7c;
+  --on-wine: #1a0a0d;
+  --ok: #6cc39a;
+  --warn: #e0a05a;
+  --bad: #ef7b83;
+  --track: #27312a;
+  color-scheme: dark;
+}
 
-  <div class="bar finance-filter">
-    <label class="date-label">
-      Dia do relatório
-      <input type="date" id="fDate" aria-label="Dia do relatório">
-    </label>
-    <button type="button" id="todayBtn">Hoje</button>
-    <button type="button" id="expenseBtn" class="primary">Registrar despesa</button>
-  </div>
+html {
+  scroll-padding-top: env(safe-area-inset-top, 0px);
+}
 
-  <section class="stats finance-stats" aria-label="Resumo financeiro do dia">
-    <div class="stat"><b id="fiRev">R$ 0,00</b><span>vendas registradas</span></div>
-    <div class="stat"><b id="fiBuy">R$ 0,00</b><span>compras de estoque registradas</span></div>
-    <div class="stat"><b id="fiProfit">R$ 0,00</b><span>lucro bruto estimado (venda − custo dos produtos vendidos)</span></div>
-    <div class="stat"><b id="fiLoss">R$ 0,00</b><span>perdas a preço de custo</span></div>
-    <div class="stat"><b id="fiExpenses">R$ 0,00</b><span>despesas registradas</span></div>
-  </section>
+* {
+  box-sizing: border-box;
+}
 
-  <section class="cash-panel" aria-label="Conferência do caixa">
-    <h2>Conferência do caixa · <span id="cashDayLabel"></span></h2>
-    <p class="sub">O fundo inicial não é uma venda. O sistema estima o dinheiro esperado na gaveta usando apenas movimentações marcadas como pagas em dinheiro.</p>
+[hidden] {
+  display: none !important;
+}
 
-    <div class="cash-grid">
-      <div class="cash-field">
-        <label for="cashOpen">Fundo inicial (R$)</label>
-        <input id="cashOpen" type="number" min="0" step="0.01" placeholder="Ex.: 200,00">
-        <button type="button" id="saveOpening">Salvar fundo inicial</button>
-      </div>
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 400 16px/1.5 Figtree, system-ui, sans-serif;
+}
 
-      <div class="cash-field">
-        <label>Vendas recebidas em dinheiro</label>
-        <b id="cashSales">R$ 0,00</b>
-      </div>
+.wrap {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 20px 16px 48px;
+}
 
-      <div class="cash-field">
-        <label>Compras pagas em dinheiro</label>
-        <b id="cashPurchases">R$ 0,00</b>
-      </div>
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+}
 
-      <div class="cash-field">
-        <label>Despesas pagas em dinheiro</label>
-        <b id="cashExpenses">R$ 0,00</b>
-      </div>
+h1 {
+  font: 400 clamp(1.8rem, 5vw, 2.6rem)/1.1 "Young Serif", Georgia, serif;
+  margin: 0;
+  color: goldenrod;
+}
 
-      <div class="cash-field highlight">
-        <label>Dinheiro esperado na gaveta</label>
-        <b id="cashExpected">R$ 0,00</b>
-      </div>
+.sub {
+  color: var(--muted);
+  margin: 4px 0 0;
+}
 
-      <div class="cash-field">
-        <label for="cashClose">Dinheiro contado no fechamento (R$)</label>
-        <input id="cashClose" type="number" min="0" step="0.01" placeholder="Informe o valor contado">
-        <button type="button" id="saveClosing">Conferir fechamento</button>
-      </div>
-    </div>
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
 
-    <p class="cash-result"><strong>Diferença:</strong> <span id="cashDifference">Ainda não fechado</span></p>
-    <p id="cashCloseStatus" class="sub" aria-live="polite">Informe o dinheiro contado na gaveta para comparar.</p>
-  </section>
+button {
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 8px 14px;
+  min-height: 40px;
+}
 
-  <div class="bar">
-    <input type="search" id="q" placeholder="Buscar por nome" aria-label="Buscar por nome">
-    <select id="catFilter" aria-label="Filtrar por categoria"></select>
-    <select id="statusFilter" aria-label="Filtrar por situação">
-      <option value="">Todas as situações</option>
-      <option value="low">Para repor</option>
-      <option value="ok">Estoque normal</option>
-    </select>
-  </div>
+button:hover {
+  border-color: var(--muted);
+}
 
-  <div class="tablebox">
-    <table>
-      <thead>
-        <tr>
-          <th>Produto</th>
-          <th>Estoque</th>
-          <th class="n">Mínimo</th>
-          <th class="n">Preço de venda</th>
-          <th class="n">Margem</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="rows"></tbody>
-    </table>
-    <div id="empty" class="empty" hidden>Nenhum produto encontrado. Use “Novo produto” para cadastrar.</div>
-  </div>
+button.primary {
+  background: var(--wine);
+  color: var(--on-wine);
+  border-color: var(--wine);
+  font-weight: 700;
+}
 
-  <h2>Movimentações do dia</h2>
-  <ul class="log" id="log"></ul>
-</div>
+button.danger {
+  color: var(--bad);
+  border-color: var(--bad);
+}
 
-<dialog id="pDlg">
-  <form id="pForm" method="dialog">
-    <h3 id="pTitle">Novo produto</h3>
+:focus-visible {
+  outline: 3px solid goldenrod;
+  outline-offset: 2px;
+}
 
-    <label>Nome
-      <input id="fName" required maxlength="80" placeholder="Ex.: Malbec Reserva 750 ml">
-    </label>
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
 
-    <label>Categoria
-      <input id="fCat" required maxlength="40" list="cats" placeholder="Ex.: Vinho tinto">
-    </label>
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
 
-    <datalist id="cats"></datalist>
+.stat b {
+  display: block;
+  font: 400 1.6rem/1.2 "Young Serif", Georgia, serif;
+}
 
-    <div class="row2">
-      <label>Quantidade inicial
-        <input id="fQty" type="number" min="0" step="1" value="0">
-      </label>
-      <label>Estoque mínimo
-        <input id="fMin" type="number" min="0" step="1" value="6">
-      </label>
-    </div>
+.stat span {
+  color: var(--muted);
+  font-size: .9rem;
+}
 
-    <div class="row2">
-      <label>Preço de custo (R$)
-        <input id="fCost" type="number" min="0" step="0.01" value="0">
-      </label>
-      <label>Preço de venda (R$)
-        <input id="fPrice" type="number" min="0" step="0.01" value="0">
-      </label>
-    </div>
+.stat.alert b {
+  color: var(--bad);
+}
 
-    <p class="err" id="pErr" role="alert"></p>
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+  align-items: end;
+}
 
-    <div class="dlgacts">
-      <button type="button" id="delBtn" class="danger" hidden>Excluir produto</button>
-      <button type="button" id="pCancel">Cancelar</button>
-      <button type="submit" class="primary">Salvar produto</button>
-    </div>
-  </form>
-</dialog>
+.bar input,
+.bar select {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-height: 40px;
+}
 
-<dialog id="mDlg">
-  <form id="mForm" method="dialog">
-    <h3 id="mTitle">Movimentar estoque</h3>
+.bar input[type="search"] {
+  flex: 1;
+  min-width: 180px;
+}
 
-    <label>Tipo
-      <select id="mType">
-        <option value="out">Venda</option>
-        <option value="in">Compra (reposição)</option>
-        <option value="loss">Perda ou quebra</option>
-      </select>
-    </label>
+.date-label {
+  margin: 0;
+  min-width: 190px;
+}
 
-    <div class="row2">
-      <label>Quantidade
-        <input id="mQty" type="number" min="1" step="1" value="1" required>
-      </label>
-      <label>Valor unitário (R$)
-        <input id="mUnit" type="number" min="0" step="0.01">
-      </label>
-    </div>
+.date-label input {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+}
 
-    <div class="row2">
-      <label id="mPayBox">Forma de pagamento
-        <select id="mPay">
-          <option value="pix">Pix</option>
-          <option value="dinheiro">Dinheiro</option>
-          <option value="debito">Débito</option>
-          <option value="credito">Crédito</option>
-        </select>
-      </label>
+.finance-filter {
+  margin-top: 12px;
+  margin-bottom: 16px;
+}
 
-      <div class="mtotal">
-        <span id="mTotalLabel">Total</span>
-        <b id="mTotal">R$ 0,00</b>
-      </div>
-    </div>
+.tablebox {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow-x: auto;
+}
 
-    <label>Observação (opcional)
-      <input id="mNote" maxlength="60" placeholder="Ex.: Pedido do fornecedor">
-    </label>
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
 
-    <p class="err" id="mErr" role="alert"></p>
+th,
+td {
+  text-align: left;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
 
-    <div class="dlgacts">
-      <button type="button" id="mCancel">Cancelar</button>
-      <button type="submit" class="primary">Registrar</button>
-    </div>
-  </form>
-</dialog>
+th {
+  font-weight: 700;
+  font-size: .85rem;
+  color: var(--muted);
+}
 
-<dialog id="expenseDlg">
-  <form id="expenseForm" method="dialog">
-    <h3>Registrar despesa</h3>
+tr:last-child td {
+  border-bottom: 0;
+}
 
-    <label>Valor da despesa (R$)
-      <input id="expenseAmount" type="number" min="0.01" step="0.01" required placeholder="Ex.: 35,00">
-    </label>
+td.n,
+th.n {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 
-    <label>Forma de pagamento
-      <select id="expensePay">
-        <option value="dinheiro">Dinheiro</option>
-        <option value="pix">Pix</option>
-        <option value="debito">Débito</option>
-        <option value="credito">Crédito</option>
-      </select>
-    </label>
+.cat {
+  color: var(--muted);
+  font-size: .85rem;
+}
 
-    <label>Descrição
-      <input id="expenseNote" maxlength="80" placeholder="Ex.: Compra de material de limpeza">
-    </label>
+.level {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 170px;
+}
 
-    <p class="err" id="expenseErr" role="alert"></p>
+.level .track {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--track);
+  overflow: hidden;
+}
 
-    <div class="dlgacts">
-      <button type="button" id="expenseCancel">Cancelar</button>
-      <button type="submit" class="primary">Salvar despesa</button>
-    </div>
-  </form>
-</dialog>
+.level .fill {
+  height: 100%;
+  border-radius: 4px;
+}
 
-<script src="script.js"></script>
-</body>
-</html>
+.tag {
+  font-size: .8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ok {
+  color: var(--ok);
+}
+
+.low {
+  color: var(--warn);
+}
+
+.out {
+  color: var(--bad);
+}
+
+.fill.ok {
+  background: var(--ok);
+}
+
+.fill.low {
+  background: var(--warn);
+}
+
+.fill.out {
+  background: var(--bad);
+}
+
+.acts {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.acts button {
+  padding: 6px 10px;
+  min-height: 36px;
+}
+
+.empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--muted);
+}
+
+h2 {
+  font: 400 1.3rem/1.2 "Young Serif", Georgia, serif;
+  margin: 28px 0 10px;
+  color: goldenrod;
+}
+
+.log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.log li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.log li:last-child {
+  border-bottom: 0;
+}
+
+.log small {
+  color: var(--muted);
+}
+
+.log .amt {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.log .amt small {
+  display: block;
+}
+
+dialog {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 20px;
+  width: min(420px, 92vw);
+}
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, .5);
+}
+
+dialog h3 {
+  font: 400 1.3rem/1.2 "Young Serif", Georgia, serif;
+  margin: 0 0 14px;
+}
+
+label {
+  display: block;
+  font-size: .9rem;
+  margin-bottom: 10px;
+  color: var(--muted);
+}
+
+label input,
+label select {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  min-height: 40px;
+  color: var(--text);
+}
+
+.row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.dlgacts {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.err {
+  color: red;
+  font-size: .9rem;
+  min-height: 1.3em;
+  margin: 0;
+}
+
+.stats.finance-stats {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.finance-stats .stat b {
+  font-size: 1.35rem;
+}
+
+.mtotal {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+
+.mtotal b {
+  color: var(--text);
+  font-size: 1.2rem;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.cash-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 18px 0 26px;
+}
+
+.cash-panel h2 {
+  margin: 0 0 8px;
+}
+
+.cash-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.cash-field {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 12px;
+  min-width: 0;
+}
+
+.cash-field label {
+  margin: 0 0 6px;
+}
+
+.cash-field b {
+  font-size: 1.15rem;
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.cash-field input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  margin: 0 0 8px;
+  min-height: 40px;
+  color: var(--text);
+}
+
+.cash-field button {
+  width: 100%;
+  padding: 8px;
+  font-size: .9rem;
+}
+
+.cash-field.highlight {
+  border-color: var(--ok);
+}
+
+.cash-result {
+  margin: 14px 0 2px;
+  font-size: 1.05rem;
+}
+
+#cashDifference {
+  font-weight: 700;
+}
+
+#pCancel,
+#mCancel,
+#expenseCancel {
+  background: #7a1e2c;
+  color: #fff;
+  border-color: #7a1e2c;
+}
+
+#mForm .primary,
+#pForm .primary,
+#expenseForm .primary {
+  background: green;
+  border-color: green;
+  color: #fff;
+}
+
+img.brand {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  background: #000;
+  border-radius: 18px;
+  margin-bottom: 16px;
+  position: relative;
+  top: 11px;
+}
+
+#addBtn {
+  background: goldenrod;
+  border-color: goldenrod;
+  color: #000;
+  margin-top: 24px;
+}
+
+@media (max-width: 900px) {
+  .stats.finance-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .cash-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .stats.finance-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stats.finance-stats .stat b {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .stats {
+    grid-template-columns: 1fr;
+  }
+
+  .cash-grid {
+    grid-template-columns: 1fr;
+  }
+
+  header {
+    align-items: flex-start;
+  }
+
+  #addBtn {
+    margin-top: 24px;
+  }
+
+  .log li {
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fill {
+    transition: width .3s;
+  }
+}
