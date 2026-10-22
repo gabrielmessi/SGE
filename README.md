@@ -15,14 +15,13 @@ Sistema web para gerenciamento de estoque de uma adega, desenvolvido para pratic
 - **Histórico:** consultar movimentações registradas.
 - **Controle financeiro diário:** acompanhar vendas, compras, perdas e despesas.
 - **Controle de caixa:** registrar o valor inicial, conferir o saldo esperado e informar o valor final.
-- **Armazenamento local:** salvar os dados no navegador utilizando `localStorage`.
+- **Armazenamento na nuvem:** salvar os dados no navegador utilizando `supabase`.
 
 # Tecnologias utilizadas
 
 - **HTML5** — estrutura da aplicação.
 - **CSS3** — estilização e organização visual.
 - **JavaScript** — funcionalidades, cálculos e manipulação dos dados.
-- **LocalStorage** — persistência dos dados no navegador.
 
 # Uso de Inteligência Artificial
 
@@ -32,30 +31,29 @@ O desenvolvimento do projeto também faz parte do meu processo de aprendizado e 
 
 # Como executar
 
-1. Faça o download ou clone este repositório.
-2. Abra a pasta do projeto.
-3. Abra o arquivo `index.html` no navegador.
-
-Não é necessário configurar um servidor ou banco de dados para executar a versão local.
+1. Abra esse link: https://sge.gabrielmessicabraldasilva62.workers.dev/ no navegador.
+2. Crie um usuário.
+3. Requer autorização do adm para entrar.
 
 # Estrutura do projeto
 
 ```text
-adega-controle-estoque/
+Adega. Estoque e caixa/
 ├── index.html
 ├── styles.css
-└── script.js
+├── script.js
+├── supabase-auth.js
+└── supabase-config.js
 ```
 
 # Observações
 
-- Os dados ficam armazenados no navegador utilizado.
-- Limpar os dados do navegador pode apagar as informações salvas.
-- Esta versão utiliza armazenamento local, não um banco de dados compartilhado entre diferentes dispositivos.
+- Os dados ficam armazenados na nuvem.
+- Os dados são compartilhados entre todos os usuários autorizados do sistema.
 
 # Objetivo
 
-Este projeto faz parte da minha jornada de aprendizado em desenvolvimento web, com foco na construção de aplicações práticas e no aprimoramento de lógica de programação, manipulação do DOM e gerenciamento de dados com JavaScript.
+Este projeto faz parte da minha jornada de aprendizado em desenvolvimento web, com foco na construção de aplicações práticas com HTML e CSS e no aprimoramento de lógica de programação, manipulação do DOM e gerenciamento de dados com JavaScript.
 
 ---
 
