@@ -1,70 +1,86 @@
-# SGE — Sistema de Gestão de Estoque
+SGE — Sistema de Gestão de Estoque
 
-Sistema web para gerenciamento de estoque e operações de um pequeno comércio, desenvolvido com foco em organização, controle de movimentações e acompanhamento financeiro.
+O SGE (Sistema de Gestão de Estoque) é uma aplicação web desenvolvida para auxiliar no gerenciamento de produtos, controle de movimentações de estoque e acompanhamento financeiro de pequenos comércios.
 
-O SGE permite administrar produtos, acompanhar quantidades disponíveis, registrar entradas e saídas e consultar informações financeiras em uma interface prática e intuitiva.
+O projeto foi desenvolvido com HTML, CSS e JavaScript, integrando o Supabase para armazenamento de dados, autenticação e sincronização entre usuários autorizados.
 
-**Acesse o sistema:** [SGE — Aplicação Web](https://sge.gabrielmessicabraldasilva62.workers.dev/)
+Status: a aplicação está temporariamente fora do ar por decisão do desenvolvedor. O repositório permanece disponível para consulta do código-fonte e acompanhamento do projeto.
 
-## Funcionalidades
+Funcionalidades
 
-- **Gestão de produtos:** cadastro, edição, consulta e exclusão de produtos.
-- **Controle de estoque:** acompanhamento das quantidades disponíveis e identificação de produtos com estoque baixo.
-- **Movimentações:** registro de entradas, vendas, perdas e outras operações de estoque.
-- **Histórico:** consulta das movimentações realizadas.
-- **Controle financeiro:** acompanhamento de receitas, compras, custos, perdas e despesas.
-- **Controle de caixa:** registro de abertura e fechamento de caixa.
-- **Autenticação e autorização:** acesso ao sistema condicionado às permissões configuradas.
-- **Armazenamento em nuvem:** integração com Supabase para persistência e compartilhamento dos dados entre usuários autorizados.
-- **Sincronização de dados:** atualização das informações entre usuários conectados.
+* Gestão de produtos: cadastro, edição, consulta e exclusão de produtos.
+* Categorias: organização dos produtos por categoria.
+* Controle de estoque: acompanhamento das quantidades disponíveis e definição de estoque mínimo.
+* Alertas de estoque: identificação de produtos que precisam de reposição ou estão esgotados.
+* Movimentações de estoque: registro de compras, vendas e perdas.
+* Histórico de movimentações: consulta dos registros das operações realizadas.
+* Controle financeiro: acompanhamento de receitas, custos, despesas e perdas.
+* Controle de caixa: recursos para acompanhamento das operações financeiras.
+* Autenticação e autorização: controle de acesso conforme as permissões configuradas.
+* Banco de dados em nuvem: integração com Supabase para persistência dos dados.
+* Sincronização: atualização dos dados entre usuários autorizados, conforme a configuração do sistema.
 
-## Tecnologias utilizadas
+Tecnologias utilizadas
 
-| Tecnologia | Aplicação no projeto |
-|---|---|
-| HTML5 | Estrutura da interface |
-| CSS3 | Estilização e apresentação visual |
-| JavaScript | Lógica, validações e funcionalidades |
-| Supabase | Banco de dados, autenticação e sincronização |
-| Git e GitHub | Versionamento e gerenciamento do código |
-| Cloudflare | Hospedagem e disponibilização da aplicação |
+Tecnologia	Finalidade
+HTML5	Estrutura da aplicação
+CSS3	Estilização e layout responsivo
+JavaScript	Lógica, validações e funcionalidades
+Supabase	Banco de dados e autenticação
+LocalStorage	Armazenamento local e apoio à persistência de dados
+Git	Controle de versão
+GitHub	Hospedagem do código-fonte
+Cloudflare Workers	Ambiente de publicação utilizado durante o desenvolvimento
 
-## Estrutura do projeto
+Estrutura do projeto
 
-```text
 SGE/
 ├── index.html          # Estrutura da aplicação
 ├── styles.css          # Estilos da interface
-├── script.js           # Lógica e funcionalidades
-├── supabase-auth.js    # Autenticação e sincronização
-├── supabase-config.js  # Configuração do Supabase
+├── script.js           # Lógica e funcionalidades do sistema
+├── supabase-auth.js    # Autenticação e integração com o Supabase
+├── supabase-config.js  # Configuração da integração
 └── README.md           # Documentação do projeto
-```
 
-## Objetivo
+Arquitetura e funcionamento
 
-O projeto foi desenvolvido para aplicar conhecimentos de desenvolvimento web na criação de uma solução funcional para gerenciamento de estoque.
+O SGE utiliza JavaScript para executar as principais funcionalidades da interface e gerenciar as operações realizadas pelo usuário.
 
-Além de apresentar informações sobre produtos, o SGE reúne operações de estoque e controles financeiros em um único sistema, buscando facilitar a organização das atividades diárias de um pequeno comércio.
+A integração com o Supabase permite armazenar informações remotamente e implementar autenticação e controle de acesso. O LocalStorage também é utilizado como parte da estratégia de armazenamento da aplicação.
 
-## Desenvolvimento e revisão
+A disponibilidade e o funcionamento dos recursos dependem da configuração dos serviços integrados e das respectivas permissões de acesso.
 
-O projeto foi desenvolvido e aprimorado de forma prática, com utilização de ferramentas de inteligência artificial como apoio à revisão do código e à identificação de possíveis melhorias.
+Objetivo do projeto
 
-A revisão com auxílio de IA é complementar ao desenvolvimento e não substitui testes, validações ou a responsabilidade sobre o código.
+O objetivo do SGE é desenvolver uma solução prática para organização de estoque e acompanhamento financeiro, aplicando conhecimentos de desenvolvimento web em um projeto próprio.
 
-## Status do projeto
+Durante seu desenvolvimento, foram trabalhados conceitos como:
 
-**Em desenvolvimento e aprimoramento.**
+* Manipulação do DOM com JavaScript.
+* Validação de dados e tratamento de erros.
+* Organização de funcionalidades e responsabilidades.
+* Persistência de dados no navegador.
+* Integração com banco de dados em nuvem.
+* Autenticação e controle de permissões.
+* Sincronização de informações.
+* Versionamento e gerenciamento de código com Git e GitHub.
+* Publicação de aplicações web.
 
-O SGE está disponível para acesso pela aplicação web. As funcionalidades dependem da configuração do ambiente e das permissões de acesso.
+Status do projeto
 
-## Autor
+Em desenvolvimento e aprimoramento.
 
-**Gabriel Messi Cabral da Silva**
+A publicação da aplicação web foi suspensa temporariamente por decisão do desenvolvedor. O código-fonte continua disponível neste repositório para consulta e evolução futura.
 
-GitHub: [@gabrielmessi](https://github.com/gabrielmessi)
+O projeto poderá voltar a ser publicado quando o desenvolvedor decidir retomar sua disponibilização.
 
----
+Autor
 
-Projeto desenvolvido para fins práticos de aprendizado e aplicação de conhecimentos em desenvolvimento web.
+Gabriel Messi Cabral da Silva
+
+* GitHub: @gabrielmessi
+* Repositório: github.com/gabrielmessi/SGE
+
+⸻
+
+Projeto desenvolvido de forma prática para aprendizado, experimentação e construção de portfólio na área de desenvolvimento web.
